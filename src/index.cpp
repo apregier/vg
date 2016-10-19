@@ -9,6 +9,7 @@ Index::Index(void) {
     start_sep = '\x00';
     end_sep = '\xff';
     write_options = rocksdb::WriteOptions();
+    write_options.disableWAL = true;
     mem_env = false;
     use_snappy = false;
     // We haven't opened the index yet. We don't get false by default on all platforms.
@@ -36,43 +37,49 @@ rocksdb::Options Index::GetOptions(void) {
 
     options.create_if_missing = true;
     options.max_open_files = -1;
+    options.enable_thread_tracking = true;
+    options.allow_mmap_reads = true;
+
+    // universal compaction, 1GiB memtable budget
+    options.OptimizeUniversalStyleCompaction(1<<30);
+    options.num_levels = 3;
+    options.target_file_size_base = 16 * size_t(1<<30);
+    options.compression_per_level.clear();
     options.compression = rocksdb::kSnappyCompression;
-    options.compaction_style = rocksdb::kCompactionStyleLevel;
-    // we are unlikely to reach either of these limits
+    options.level0_file_num_compaction_trigger = 5;
+    options.level0_slowdown_writes_trigger = (1<<30);
+    options.level0_stop_writes_trigger = (1<<30);
+
     options.IncreaseParallelism(threads);
-    options.max_background_flushes = threads;
-    options.max_background_compactions = threads;
 
-    options.num_levels = 2;
-    options.target_file_size_base = (long) 1024 * 1024 * 512; // ~512MB (bigger in practice)
-    options.write_buffer_size = 1024 * 1024 * 256; // ~256MB
+    options.compaction_options_universal.compression_size_percent = -1;
+    options.compaction_options_universal.allow_trivial_move = true;
+    options.compaction_options_universal.max_size_amplification_percent = (1<<30);
+    options.compaction_options_universal.size_ratio = 10;
+    options.compaction_options_universal.min_merge_width = 2;
+    options.compaction_options_universal.max_merge_width = 10;
+    options.access_hint_on_compaction_start = rocksdb::Options::AccessHint::SEQUENTIAL;
+    options.compaction_readahead_size = 16 << 20;
 
-    // doesn't work this way
     rocksdb::BlockBasedTableOptions topt;
+    topt.format_version = 2;
+    topt.block_size = 16 * 1024;
     topt.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10, true));
-    topt.block_cache = rocksdb::NewLRUCache(512 * 1024 * 1024, 7);
-    topt.no_block_cache = true;
+    topt.block_cache = rocksdb::NewLRUCache(1<<30, 7);
     options.table_factory.reset(NewBlockBasedTableFactory(topt));
     options.table_cache_numshardbits = 7;
-    options.allow_mmap_reads = true;
-    options.allow_mmap_writes = false;
 
+    options.disableDataSync = true;
+    options.write_buffer_size = (1<<30);
+    options.max_write_buffer_number = threads;
+    options.min_write_buffer_number_to_merge = 1;
     if (bulk_load) {
         options.PrepareForBulkLoad();
-        options.max_write_buffer_number = threads;
-        options.max_background_flushes = threads;
-        options.max_background_compactions = threads;
         options.compaction_style = rocksdb::kCompactionStyleNone;
         options.memtable_factory.reset(new rocksdb::VectorRepFactory(1000));
-    }
-
-    options.compression_per_level.resize(options.num_levels);
-    for (int i = 0; i < options.num_levels; ++i) {
-        if (i == 0 || use_snappy == true) {
-            options.compression_per_level[i] = rocksdb::kSnappyCompression;
-        } else {
-            options.compression_per_level[i] = rocksdb::kZlibCompression;
-        }
+    } else {
+        options.allow_concurrent_memtable_write = true;
+        options.enable_write_thread_adaptive_yield = true;
     }
 
     return options;
