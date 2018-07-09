@@ -1307,7 +1307,18 @@ CAAATAAGGCTTGGAAATTTTCTGGAGTTCTATTATATTCCAACTCTCTG
             REQUIRE(node.sequence()==expected[node.id()]);
         }
     }
-
+    SECTION("edges are as expected") {
+        unordered_set<pair<string, string>> expected_links;
+        expected_links.insert({"1", "2"});
+        expected_links.insert({"2", "3"});
+        expected_links.insert({"3", "4"});
+        expected_links.insert({"4", "5"});
+        expected_links.insert({"5", "6"});
+        expected_links.insert({"6", "7"});
+        expected_links.insert({"2", "5"});
+        REQUIRE(expected_links.size() == result.edge_size());
+    }
+        
 }
 }
 }
