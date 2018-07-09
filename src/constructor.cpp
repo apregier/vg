@@ -713,9 +713,8 @@ namespace vg {
                             
                                 if (created_nodes.count(key) == 0) {
 
-                                    size_t arc_end = variant->position - chunk_offset + variant->get_sv_len(alt_index)+1;
+                                    size_t arc_end = variant->position - chunk_offset + abs(variant->get_sv_len(alt_index))+1;
                                     int64_t arc_start = (int64_t) variant->position - chunk_offset; 
-
                                     deletions_ending_at[arc_end].insert(arc_start);
                                     deletion_starts.insert(arc_start);
 
