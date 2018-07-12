@@ -14,7 +14,7 @@
 #include <algorithm>
 #include <memory>
 
-//#define debug
+#define debug
 
 namespace vg {
 
@@ -270,10 +270,8 @@ namespace vg {
             // Make a mapping for it
             auto* mapping = path->add_mapping();
             mapping->mutable_position()->set_node_id(node->id());
-
             // Set the rank to the next available rank in the path.
             mapping->set_rank(++max_rank[path]);
-
             // Make it a perfect match explicitly
             auto* match_edit = mapping->add_edit();
             match_edit->set_from_length(node->sequence().size());
@@ -1146,6 +1144,41 @@ namespace vg {
                                 edge->set_from(left_node);
                                 edge->set_to(right_node);
 
+                                if (alt_paths) {
+                                    Path* p;
+                                    Node l;
+                                    Node r;
+                                    bool found_p = false;
+                                    bool found_l = false;
+                                    bool found_r = false;
+                                    int p_index = 0;
+                                    for (Path aPath : to_return.graph.path()) {
+                                        if (aPath.name() == deletion_start_to_alt_name[deletion_start]) {
+                                            p = to_return.graph.mutable_path(p_index);
+                                            found_p = true;
+                                            break;
+                                        }
+                                        p_index++;
+                                    }
+                                    for (Node aNode : to_return.graph.node()) {
+                                        if (aNode.id() == left_node) {
+                                            l = aNode;
+                                            found_l = true;
+                                            break;
+                                        }
+                                    }
+                                    for (Node aNode : to_return.graph.node()) {
+                                        if (aNode.id() == right_node) {
+                                            r = aNode;
+                                            found_r = true;
+                                            break;
+                                        }
+                                    }
+                                    if (found_p && found_l && found_r) {
+                                        add_match(p, &l);
+                                        add_match(p, &r);
+                                    }
+                                }
                             }
                         }
                     }
@@ -1201,7 +1234,6 @@ namespace vg {
 
         // Remember to tell the caller how many IDs we used
         to_return.max_id = next_id - 1;
-
         return to_return;
     }
 
