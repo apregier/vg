@@ -1318,7 +1318,20 @@ CAAATAAGGCTTGGAAATTTTCTGGAGTTCTATTATATTCCAACTCTCTG
         expected_links.insert({"2", "5"});
         REQUIRE(expected_links.size() == result.edge_size());
     }
-        
+    SECTION("paths are as expected") {
+        unordered_map<string, size_t> expected_path_lengths;
+        expected_path_lengths.insert({"x", 7});
+        expected_path_lengths.insert({"_alt_5b773de668d4489bc41ac104cdea0d79742bd4a6_0", 3});
+        expected_path_lengths.insert({"_alt_5b773de668d4489bc41ac104cdea0d79742bd4a6_1", 2});
+        for (auto path : result.path()) {
+            cerr << "Path name: " << path.name() << endl;
+            for (auto m : path.mapping()) {
+                cerr << "Node: " << m.position().node_id() << endl;
+            }
+            REQUIRE(path.mapping_size() == expected_path_lengths[path.name()]);
+        }
+        REQUIRE(result.path_size() == 3);
+    }
 }
 }
 }
