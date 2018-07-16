@@ -185,7 +185,7 @@ void variant_recall(VG* graph,
         var.position -= 1;
         var.canonicalize_sv(*ref_genome, insertions, -1);
         string var_id = make_variant_id(var);
-
+        var.position += 1;
         hash_to_var[ var_id ] = var;
 
 
