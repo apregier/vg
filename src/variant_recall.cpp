@@ -248,7 +248,6 @@ void variant_recall(VG* graph,
 #pragma omp atomic write
                 contained = true;
                 node_for_var = node_id;
-
             }
             else if (!variant_nodes.count(node_id)){
 #pragma omp atomic write
@@ -454,6 +453,8 @@ void variant_recall(VG* graph,
         //cerr << it.second.position << " ";
         it.second.setVariantCallFile(outvcf);
         it.second.format.push_back("GT");
+        it.second.format.push_back("RO");
+        it.second.format.push_back("AO");
         auto& genotype_vector = it.second.samples[sampleName]["GT"];
         vector<int64_t> read_counts(it.second.alt.size() + 1, 0);
         for (int i = 0; i <= it.second.alt.size(); ++i){
@@ -466,9 +467,10 @@ void variant_recall(VG* graph,
                 readsum = traversal_name_to_alignment_names[ alt_id ].size();
             }
             read_counts[i] = readsum;
-            it.second.info["AD"].push_back(std::to_string(readsum));
+            it.second.samples[sampleName]["DP"].push_back(std::to_string(readsum));
         }
-
+        it.second.samples[sampleName]["RO"].push_back(std::to_string(read_counts[0]));
+        it.second.samples[sampleName]["AO"].push_back(std::to_string(read_counts[1]));
         pair<double, int> prob_and_geno_index = do_math(  read_counts[0], read_counts[1], 0.333);
         if (prob_and_geno_index.second == 0){
             genotype_vector.push_back("0/0");
