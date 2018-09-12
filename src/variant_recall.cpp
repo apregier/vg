@@ -147,7 +147,6 @@ void variant_recall(VG* graph,
 
     //Cache graph paths
     unordered_map<string, list<mapping_t> > gpaths( (graph->paths)._paths.begin(), (graph->paths)._paths.end()  );
-
     // To allow non-flat alleles, we want to use SnarlTraversals rather than
     // paths.
     unordered_map<string, set<int64_t> > snarl_name_to_node_set;
@@ -183,11 +182,10 @@ void variant_recall(VG* graph,
         // Adjust the position offset, canonicalize any structural variants,
         // and get the sha1 hash of the variant and store that in a map for later.
         var.position -= 1;
-        var.canonicalize_sv(*ref_genome, insertions, -1);
+        var.canonicalize_sv(*ref_genome, insertions, true, -1);
         string var_id = make_variant_id(var);
         var.position += 1;
         hash_to_var[ var_id ] = var;
-
 
         // If we're just using the GAM, build a map Node -> variant and
         // a map alt_path_id (i.e. "allele name") -> NodeID. We'll use these to count
